@@ -1,5 +1,6 @@
 import streamlit as st
 import itertools
+import pandas as pd
 
 st.title("Predittore trigliceridi")
 
@@ -45,16 +46,17 @@ else:
         
         somma_verifica = 0.0
         
-       # 3. GESTIONE PERMUTAZIONI E STAMPA A SCHERMO
+       # 3. GESTIONE PERMUTAZIONI E PREPARAZIONE TABELLA
+        import pandas as pd # (Meglio metterlo in cima al file con gli altri import)
+        
+        dati_tabella = []
+        somma_verifica = 0.0
+        
         for key in percentualitag:
             ordinate = list(set(itertools.permutations(list(key), 3)))
             centriordinate = [el1[1] for el1 in ordinate]
             
-            # Intestazione della famiglia
-            st.markdown(f"**Famiglia {'-'.join(key)}**")
-            
-            # Prepariamo una lista temporanea per salvare le molecole di questa famiglia
-            dati_molecole = []
+            famiglia = "-".join(key)
             
             for el in ordinate:
                 if el[0] <= el[2]:
@@ -62,13 +64,29 @@ else:
                     prob_finale = percentualitag[key] * centriordinate.count(el[1])
                     somma_verifica += prob_finale
                     molecola = "".join(el)
-                    dati_molecole.append((molecola, prob_finale * 100))
+                    
+                    # Aggiungiamo una riga alla nostra tabella
+                    dati_tabella.append({
+                        "Famiglia": famiglia,
+                        "Molecola": molecola,
+                        "Probabilità (%)": round(prob_finale * 100, 2)
+                    })
             
-            # Creiamo un numero di colonne pari a quanti isomeri abbiamo trovato (1, 2 o 3)
-            cols = st.columns(len(dati_molecole))
+        # Creiamo il DataFrame (la tabella vera e propria)
+        df = pd.DataFrame(dati_tabella)
+        
+        # Mostriamo la tabella su Streamlit
+        st.subheader("Tabella delle Probabilità")
+        
+        # st.dataframe crea una tabella moderna in cui puoi anche ordinare le colonne cliccandoci sopra!
+        st.dataframe(
+            df, 
+            use_container_width=True, # Fa espandere la tabella per tutta la larghezza
+            hide_index=True,          # Nasconde i numerini di riga a sinistra (0, 1, 2...)
+            column_config={
+                "Probabilità (%)": st.column_config.NumberColumn(format="%.2f %%")
+            }
+        )
             
-            # Inseriamo i dati graficamente come "metriche" dentro le colonne
-            for i, (mol, prob) in enumerate(dati_molecole):
-                cols[i].metric(label=mol, value=f"{prob:.2f}%")
-            
-            st.divider() # Riga orizzontale per separare visivamente le famiglie
+        # Check finale per confermare che la somma faccia effettivamente 100%
+        st.info(f"Verifica algebrica totale: **{somma_verifica * 100:.0f}%**")
