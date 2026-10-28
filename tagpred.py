@@ -42,7 +42,6 @@ else:
             # Calcolo esatto senza arrotondamenti preventivi per non perdere decimali
             percentualitag[elem] = (composizione[elem[0]]) * (composizione[elem[1]]) * (composizione[elem[2]])
             
-        st.subheader("Risultati Probabilistici")
         
         somma_verifica = 0.0
         
@@ -52,7 +51,7 @@ else:
             centriordinate = [el1[1] for el1 in ordinate]
             
             # Creiamo una stringa vuota per simulare il comportamento del tuo "print(..., end='  ')"
-            riga_output = f"**Famiglia {'-'.join(key)}:** &nbsp;&nbsp;&nbsp; "
+            riga_output = f"**{'-'.join(key)}:** &nbsp;&nbsp;&nbsp; "
             
             for el in ordinate:
                 if el[0] <= el[2]:
