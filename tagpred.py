@@ -46,8 +46,7 @@ else:
         
         somma_verifica = 0.0
         
-       # 3. GESTIONE PERMUTAZIONI E PREPARAZIONE TABELLA
-        import pandas as pd # (Meglio metterlo in cima al file con gli altri import)
+      # 3. GESTIONE PERMUTAZIONI E TABELLA ORIZZONTALE
         
         dati_tabella = []
         somma_verifica = 0.0
@@ -56,8 +55,11 @@ else:
             ordinate = list(set(itertools.permutations(list(key), 3)))
             centriordinate = [el1[1] for el1 in ordinate]
             
-            famiglia = "-".join(key)
+            Gruppo = "-".join(key)
+            # Inizializziamo la riga per questa gruppo
+            riga = {"Gruppo": gruppo}
             
+            indice_colonna = 1
             for el in ordinate:
                 if el[0] <= el[2]:
                     # Calcolo finale
@@ -65,28 +67,22 @@ else:
                     somma_verifica += prob_finale
                     molecola = "".join(el)
                     
-                    # Aggiungiamo una riga alla nostra tabella
-                    dati_tabella.append({
-                        "Famiglia": famiglia,
-                        "Molecola": molecola,
-                        "Probabilità (%)": round(prob_finale * 100, 2)
-                    })
+                    # Salviamo la stringa completa nella colonna dinamica corrispondente
+                    riga[f"Isomero {indice_colonna}"] = f"{molecola}: {prob_finale * 100:.2f}%"
+                    indice_colonna += 1
+                    
+            # Aggiungiamo la riga completata alla lista
+            dati_tabella.append(riga)
             
-        # Creiamo il DataFrame (la tabella vera e propria)
+        # Creiamo il DataFrame
         df = pd.DataFrame(dati_tabella)
         
-        # Mostriamo la tabella su Streamlit
-        st.subheader("Tabella delle Probabilità")
+        # Sostituiamo i famosi "punti vuoti" (che Pandas chiamerebbe NaN) con celle vuote pulite
+        df = df.fillna("")
         
-        # st.dataframe crea una tabella moderna in cui puoi anche ordinare le colonne cliccandoci sopra!
-        st.dataframe(
-            df, 
-            use_container_width=True, # Fa espandere la tabella per tutta la larghezza
-            hide_index=True,          # Nasconde i numerini di riga a sinistra (0, 1, 2...)
-            column_config={
-                "Probabilità (%)": st.column_config.NumberColumn(format="%.2f %%")
-            }
-        )
+        # Mostriamo la tabella
+        st.subheader("Tabella delle Probabilità")
+        st.dataframe(df, use_container_width=True, hide_index=True)
             
-        # Check finale per confermare che la somma faccia effettivamente 100%
+        # Check finale
         st.info(f"Verifica algebrica totale: **{somma_verifica * 100:.0f}%**")
