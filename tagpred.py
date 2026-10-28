@@ -30,6 +30,7 @@ else:
     st.success("Composizione iniziale valida (100%).")
     
     if st.button("Calcola Trigliceridi"):
+        pass
 
 
 '''a="A"
