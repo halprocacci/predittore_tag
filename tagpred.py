@@ -57,7 +57,7 @@ else:
             
             Gruppo = "-".join(key)
             # Inizializziamo la riga per questa gruppo
-            riga = {"Gruppo": famiglia}
+            riga = {"Gruppo": Gruppo}
             
             indice_colonna = 1
             for el in ordinate:
