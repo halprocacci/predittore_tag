@@ -45,27 +45,30 @@ else:
         
         somma_verifica = 0.0
         
-        # 3. GESTIONE PERMUTAZIONI E STAMPA A SCHERMO
+       # 3. GESTIONE PERMUTAZIONI E STAMPA A SCHERMO
         for key in percentualitag:
             ordinate = list(set(itertools.permutations(list(key), 3)))
             centriordinate = [el1[1] for el1 in ordinate]
             
-            # Creiamo una stringa vuota per simulare il comportamento del tuo "print(..., end='  ')"
-            riga_output = f"**{'-'.join(key)}:** &nbsp;&nbsp;&nbsp; "
+            # Intestazione della famiglia
+            st.markdown(f"**Famiglia {'-'.join(key)}**")
+            
+            # Prepariamo una lista temporanea per salvare le molecole di questa famiglia
+            dati_molecole = []
             
             for el in ordinate:
                 if el[0] <= el[2]:
                     # Calcolo finale
                     prob_finale = percentualitag[key] * centriordinate.count(el[1])
                     somma_verifica += prob_finale
-                    
-                    # Aggiungiamo i dati alla stringa, convertiti in % con 2 decimali
                     molecola = "".join(el)
-                    riga_output += f"`{molecola}: {prob_finale * 100:.2f}%` &nbsp;&nbsp;&nbsp; "
+                    dati_molecole.append((molecola, prob_finale * 100))
             
-            # Stampiamo l'intera riga della famiglia su Streamlit
-            st.markdown(riga_output)
+            # Creiamo un numero di colonne pari a quanti isomeri abbiamo trovato (1, 2 o 3)
+            cols = st.columns(len(dati_molecole))
+            
+            # Inseriamo i dati graficamente come "metriche" dentro le colonne
+            for i, (mol, prob) in enumerate(dati_molecole):
+                cols[i].metric(label=mol, value=f"{prob:.2f}%")
+            
             st.divider() # Riga orizzontale per separare visivamente le famiglie
-            
-        # Un check finale per confermare che la somma faccia effettivamente 100%
-        st.info(f"Verifica algebrica totale: **{somma_verifica * 100:.0f}%**")
