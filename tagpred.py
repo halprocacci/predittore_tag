@@ -27,7 +27,7 @@ for i in range(n_tags):
 if round(somma_perc, 2) < 70.00:
     st.error(f"La somma attuale è {somma_perc}%. Troppo bassa")
 else:
-    st.success("Composizione iniziale valida {somma_perc}%.")
+    st.success(f"Composizione iniziale valida {somma_perc}%.")
     
     if st.button("Calcola Trigliceridi"):
 
