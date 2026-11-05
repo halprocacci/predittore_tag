@@ -24,12 +24,14 @@ for i in range(n_tags):
     if len(tag) >= 1 and quantita > 0:
         input_data.append((tag, quantita))
 
-if round(somma_perc, 2) != 100.00:
-    st.error(f"La somma attuale è {somma_perc}%. Aggiusta i valori per arrivare esattamente a 100%.")
-else:
-    st.success("Composizione iniziale valida (100%).")
+#if round(somma_perc, 2) != 100.00:
+  #  st.error(f"La somma attuale è {somma_perc}%. Aggiusta i valori per arrivare esattamente a 100%.")
+#else:
+ #   st.success("Composizione iniziale valida (100%).")
     
-    if st.button("Calcola Trigliceridi"):
+  #  if st.button("Calcola Trigliceridi"):
+st.success(f"La somma attuale è {somma_perc}%. Aggiusta i valori per arrivare esattamente a 100%.")
+    if st.button("calcola trigliceridi)
         
         # 1. TRADUZIONE DEGLI INPUT NEL TUO FORMATO
         # Estrae i nomi e calcola le frazioni (es. 17 -> 0.17) direttamente dai dati inseriti dall'utente
