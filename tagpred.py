@@ -30,8 +30,10 @@ for i in range(n_tags):
  #   st.success("Composizione iniziale valida (100%).")
     
   #  if st.button("Calcola Trigliceridi"):
-st.success(f"La somma attuale è {somma_perc}%. Aggiusta i valori per arrivare esattamente a 100%.")
-    if st.button("calcola trigliceridi)
+
+
+st.success(f"La somma attuale è {somma_perc}%.")
+    if st.button("calcola trigliceridi"):
         
         # 1. TRADUZIONE DEGLI INPUT NEL TUO FORMATO
         # Estrae i nomi e calcola le frazioni (es. 17 -> 0.17) direttamente dai dati inseriti dall'utente
