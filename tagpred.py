@@ -48,65 +48,120 @@ for i in range(n_known):
 st.divider()
 
 # VALIDAZIONE E CALCOLO
-if round(somma_perc, 2) < 70.00:
-    st.error(f"La somma attuale degli acidi grassi è {somma_perc}%. Troppo bassa.")
+if round(somma_perc, 2) <= 0.0:
+    st.error("Inserisci delle quantità per gli acidi grassi.")
+elif somma_known >= 100.0:
+    st.error("I TAG forzati non possono superare o eguagliare il 100%.")
 else:
-    st.success(f"Acidi grassi: {somma_perc}%. TAG noti da forzare: {somma_known}%.")
-    
     if st.button("Calcola Trigliceridi"):
         
-        # 1. TRADUZIONE DEGLI INPUT NEL TUO FORMATO
-        elementi = [item[0] for item in input_data]
-        composizione = {item[0]: item[1] / 100.0 for item in input_data}
+        # 1. NORMALIZZAZIONE A 100 DEGLI ACIDI GRASSI INIZIALI
+        fa_norm = {item[0]: (item[1] / somma_perc) * 100.0 for item in input_data}
         
-        # NOTA: known_tags_data contiene ora una lista di tuple es. [("POP", 30.0)]
-        # Pronta per essere usata nei calcoli futuri.
-
-        # 2. IL TUO MOTORE COMBINATORIO
-        comb = list(itertools.combinations_with_replacement(elementi, 3))
-        percentualitag = {}
-        for elem in comb:
-            # Calcolo esatto senza arrotondamenti preventivi per non perdere decimali
-            percentualitag[elem] = (composizione[elem[0]]) * (composizione[elem[1]]) * (composizione[elem[2]])
+        # 2. SOTTRAZIONE DEI MATTONI DEI TAG FORZATI
+        fa_rimasti = fa_norm.copy()
+        famiglie_forzate = []
+        
+        for k_tag, k_q in known_tags_data:
+            lettere = list(k_tag)
+            famiglia = tuple(sorted(lettere))
+            famiglie_forzate.append(famiglia)
             
-        somma_verifica = 0.0
+            # Un TAG consuma un terzo del suo peso in % per ogni posizione
+            consumo_per_lettera = k_q / 3.0
+            for char in lettere:
+                if char in fa_rimasti:
+                    fa_rimasti[char] -= consumo_per_lettera
+                else:
+                    st.error(f"Errore: Il TAG forzato {k_tag} contiene l'acido '{char}' che non è presente negli acidi grassi inziali.")
+                    st.stop()
+                    
+        # Controllo che le forzature non mandino in negativo gli acidi grassi
+        for k, v in fa_rimasti.items():
+            if v < -0.01:
+                st.error(f"Impossibile: forzare i TAG inseriti consuma più '{k}' di quanto ce ne sia a disposizione.")
+                st.stop()
+            fa_rimasti[k] = max(0.0, v) # Pulisce eventuali errori di virgola mobile tipo -0.00001
+            
+        # 3. RICALCOLO DELLE FRAZIONI SUL RESTO
+        somma_fa_rimasti = sum(fa_rimasti.values())
+        if somma_fa_rimasti > 0:
+            composizione_motore = {k: v / somma_fa_rimasti for k, v in fa_rimasti.items()}
+        else:
+            composizione_motore = {k: 0.0 for k in fa_rimasti.keys()}
+            
+        # 4. IL TUO MOTORE COMBINATORIO
+        elementi = list(fa_rimasti.keys())
+        comb = list(itertools.combinations_with_replacement(elementi, 3))
         
-        # 3. GESTIONE PERMUTAZIONI E TABELLA ORIZZONTALE
+        prob_grezze_restanti = {}
+        somma_prob_rimaste = 0.0
+        
+        for elem in comb:
+            famiglia_chiave = tuple(sorted(elem))
+            
+            # FILTRO: Rimuove completamente le combinazioni già forzate
+            if famiglia_chiave in famiglie_forzate:
+                continue
+                
+            prob = composizione_motore[elem[0]] * composizione_motore[elem[1]] * composizione_motore[elem[2]]
+            prob_grezze_restanti[famiglia_chiave] = prob
+            
+            # Calcoliamo la somma delle probabilità delle famiglie sopravvissute per poterle rimettere in scala
+            ordinate = list(set(itertools.permutations(list(famiglia_chiave), 3)))
+            centriordinate = [el1[1] for el1 in ordinate]
+            for el in ordinate:
+                if el[0] <= el[2]:
+                    somma_prob_rimaste += prob * centriordinate.count(el[1])
+
+        # 5. OUTPUT: TABELLA FORZATI
+        st.subheader("Trigliceridi Forzati (Dati Noti)")
+        dati_forzati = []
+        for k_tag, k_q in known_tags_data:
+            dati_forzati.append({"Molecola Forzata": k_tag, "Quantità Imposta (%)": f"{k_q:.2f}%"})
+        if dati_forzati:
+            st.dataframe(pd.DataFrame(dati_forzati), use_container_width=True, hide_index=True)
+        else:
+            st.info("Nessun TAG forzato inserito.")
+            
+        # 6. OUTPUT: TABELLA PROBABILISTICI (Su quello che resta)
+        st.subheader(f"Trigliceridi Probabilistici (Calcolati sul restante {100.0 - somma_known:.2f}%)")
         dati_tabella = []
-        somma_verifica = 0.0
+        somma_verifica = somma_known # Partiamo già col totale di quelli imposti
+        spazio_rimanente = 100.0 - somma_known
         
-        for key in percentualitag:
+        for key, prob_motore in prob_grezze_restanti.items():
             ordinate = list(set(itertools.permutations(list(key), 3)))
             centriordinate = [el1[1] for el1 in ordinate]
             
             Gruppo = "-".join(key)
-            # Inizializziamo la riga per questo gruppo
             riga = {"Gruppo": Gruppo}
             
             indice_colonna = 1
             for el in ordinate:
                 if el[0] <= el[2]:
-                    # Calcolo finale
-                    prob_finale = percentualitag[key] * centriordinate.count(el[1])
-                    somma_verifica += prob_finale
+                    # Riproposizioniamo la probabilità per farla stare nello spazio rimanente
+                    # (Se togli una famiglia, le altre devono espandersi a riempire il vuoto)
+                    prob_base_isomero = prob_motore * centriordinate.count(el[1])
+                    if somma_prob_rimaste > 0:
+                        prob_aggiustata = prob_base_isomero / somma_prob_rimaste
+                    else:
+                        prob_aggiustata = 0
+                        
+                    prob_finale_percentuale = prob_aggiustata * spazio_rimanente
+                    
+                    somma_verifica += prob_finale_percentuale
                     molecola = "".join(el)
                     
-                    # Salviamo la stringa completa nella colonna dinamica corrispondente
-                    riga[f"Isomero {indice_colonna}"] = f"{molecola}: {prob_finale * 100:.2f}%"
+                    riga[f"Isomero {indice_colonna}"] = f"{molecola}: {prob_finale_percentuale:.2f}%"
                     indice_colonna += 1
                     
-            # Aggiungiamo la riga completata alla lista
-            dati_tabella.append(riga)
+            if indice_colonna > 1:
+                dati_tabella.append(riga)
             
-        # Creiamo il DataFrame
-        df = pd.DataFrame(dati_tabella)
-        
-        # Sostituiamo i famosi "punti vuoti" (che Pandas chiamerebbe NaN) con celle vuote pulite
-        df = df.fillna("")
-        
-        # Mostriamo la tabella
-        st.subheader("Tabella delle Probabilità")
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        df_prob = pd.DataFrame(dati_tabella)
+        df_prob = df_prob.fillna("")
+        st.dataframe(df_prob, use_container_width=True, hide_index=True)
             
         # Check finale
-        st.info(f"Verifica algebrica totale: **{somma_verifica * 100:.0f}%**")
+        st.info(f"Verifica algebrica totale: **{somma_verifica:.0f}%**")
