@@ -135,13 +135,13 @@ else:
             centriordinate = [el1[1] for el1 in ordinate]
             
             Gruppo = "-".join(key)
-            riga = {"Gruppo": Gruppo}
+            riga = {}
+            somma_famiglia = 0.0
             
             indice_colonna = 1
             for el in ordinate:
                 if el[0] <= el[2]:
                     # Riproposizioniamo la probabilità per farla stare nello spazio rimanente
-                    # (Se togli una famiglia, le altre devono espandersi a riempire il vuoto)
                     prob_base_isomero = prob_motore * centriordinate.count(el[1])
                     if somma_prob_rimaste > 0:
                         prob_aggiustata = prob_base_isomero / somma_prob_rimaste
@@ -151,13 +151,22 @@ else:
                     prob_finale_percentuale = prob_aggiustata * spazio_rimanente
                     
                     somma_verifica += prob_finale_percentuale
+                    somma_famiglia += prob_finale_percentuale
                     molecola = "".join(el)
                     
                     riga[f"Isomero {indice_colonna}"] = f"{molecola}: {prob_finale_percentuale:.2f}%"
                     indice_colonna += 1
                     
             if indice_colonna > 1:
-                dati_tabella.append(riga)
+                # Creiamo la riga finale con il totale nel nome e una chiave temporanea per l'ordinamento
+                riga_completa = {"Famiglia": f"{Gruppo} ({somma_famiglia:.2f}%)", "_SortKey": somma_famiglia}
+                riga_completa.update(riga)
+                dati_tabella.append(riga_completa)
+        
+        # Ordina la lista in modo decrescente e rimuove la chiave temporanea
+        dati_tabella = sorted(dati_tabella, key=lambda x: x["_SortKey"], reverse=True)
+        for riga in dati_tabella:
+            del riga["_SortKey"]
             
         df_prob = pd.DataFrame(dati_tabella)
         df_prob = df_prob.fillna("")
