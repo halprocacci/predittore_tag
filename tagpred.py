@@ -27,7 +27,7 @@ for i in range(n_tags):
 st.divider()
 
 # SEZIONE 2: TAG NOTI (DA FORZARE)
-st.subheader("Imposta i Trigliceridi (TAG) noti (Opzionale)")
+st.subheader("Imposta i Trigliceridi noti (Opzionale)")
 n_known = st.number_input("Quanti TAG noti vuoi impostare?", min_value=0, max_value=10, value=1)
 
 known_tags_data = []
@@ -51,7 +51,7 @@ st.divider()
 if round(somma_perc, 2) <= 0.0:
     st.error("Inserisci delle quantità per gli acidi grassi.")
 elif somma_known >= 100.0:
-    st.error("I TAG forzati non possono superare o eguagliare il 100%.")
+    st.error("I TAG non possono superare o eguagliare il 100%.")
 else:
     if st.button("Calcola Trigliceridi"):
         
@@ -118,7 +118,7 @@ else:
         st.subheader("Trigliceridi noti")
         dati_forzati = []
         for k_tag, k_q in known_tags_data:
-            dati_forzati.append({"Molecola nota": k_tag, "Quantità Imposta (%)": f"{k_q:.2f}%"})
+            dati_forzati.append({"Molecola ": k_tag, "Quantità (%)": f"{k_q:.2f}%"})
         if dati_forzati:
             st.dataframe(pd.DataFrame(dati_forzati), use_container_width=True, hide_index=True)
         else:
