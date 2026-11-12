@@ -14,7 +14,7 @@ somma_perc = 0.0
 for i in range(n_tags):
     col1, col2 = st.columns(2)
     with col1:
-        default_tag = ["A", "B", "C"][i] if i < 3 else f"L{i}"
+        default_tag = ["P", "O", "S"][i] if i < 3 else f"L{i}"
         tag = st.text_input(f"Acido grasso {i+1} ", value=default_tag, key=f"tag_{i}").upper()
     with col2:
         default_q = [17, 43, 40][i] if i < 3 else 0
@@ -28,7 +28,7 @@ st.divider()
 
 # SEZIONE 2: TAG NOTI (DA FORZARE)
 st.subheader("Imposta i Trigliceridi (TAG) noti (Opzionale)")
-n_known = st.number_input("Quanti TAG noti vuoi forzare?", min_value=0, max_value=10, value=1)
+n_known = st.number_input("Quanti TAG noti vuoi impostare?", min_value=0, max_value=10, value=1)
 
 known_tags_data = []
 somma_known = 0.0
@@ -115,10 +115,10 @@ else:
                     somma_prob_rimaste += prob * centriordinate.count(el[1])
 
         # 5. OUTPUT: TABELLA FORZATI
-        st.subheader("Trigliceridi Forzati (Dati Noti)")
+        st.subheader("Trigliceridi noti")
         dati_forzati = []
         for k_tag, k_q in known_tags_data:
-            dati_forzati.append({"Molecola Forzata": k_tag, "Quantità Imposta (%)": f"{k_q:.2f}%"})
+            dati_forzati.append({"Molecola nota": k_tag, "Quantità Imposta (%)": f"{k_q:.2f}%"})
         if dati_forzati:
             st.dataframe(pd.DataFrame(dati_forzati), use_container_width=True, hide_index=True)
         else:
