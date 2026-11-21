@@ -162,7 +162,7 @@ frozen_fas = []
 if unobserved_fas:
     st.subheader("Acidi grassi senza TAG noti")
     cols_unobs = st.columns(min(len(unobserved_fas), 4))
-    opt_map = {"Fisso (distribuzione casuale)": None, **{f"Stessa preferenza di {fa}": fa for fa in active_fas}}
+    opt_map = {"Fisso (distribuzione casuale)": None, **{f"Stessa probabilità di {fa}": fa for fa in active_fas}}
     opt_labels = list(opt_map.keys())
 
     for idx, fa in enumerate(unobserved_fas):
