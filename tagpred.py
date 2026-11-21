@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import minimize
 
-st.set_page_config(page_title="TAG Reverse Engineering", layout="wide")
-st.title("TAG Reverse Engineering (1,3-random-2-random)")
+st.set_page_config(page_title="Predittore TAG", layout="wide")
+st.title("Predittore TAG")
 
 # ==============================================================================
 # MOTORE MATEMATICO
@@ -81,9 +81,9 @@ def generate_all_tags(T, p2, p13):
                 c = fas[j]
                 rows.append({
                     "TAG": f"{a}-{b}-{c}",
-                    "Pred (%)": predict_tag((a, b, c), p2, p13)
+                    "Predetto (%)": predict_tag((a, b, c), p2, p13)
                 })
-    return pd.DataFrame(rows).sort_values("Pred (%)", ascending=False).reset_index(drop=True)
+    return pd.DataFrame(rows).sort_values("Predetto (%)", ascending=False).reset_index(drop=True)
 
 # ==============================================================================
 # SIDEBAR
@@ -99,49 +99,49 @@ with st.sidebar:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("FA")
+    st.subheader("Acidi grassi")
     default_fa = pd.DataFrame({
-        "FA": ["P", "O", "S", "L", "ALTRO"],
+        "Acido grasso": ["P", "O", "S", "L", "ALTRO"],
         "Valore": [6.5, 40.6, 43.8, 3.3, 1.4]
     })
     fa_df = st.data_editor(default_fa, num_rows="dynamic", use_container_width=True, key="fa_editor")
 
-fa_df = fa_df.dropna(subset=["FA", "Valore"])
-fa_df["FA"] = fa_df["FA"].astype(str).str.strip()
-fa_df = fa_df[(fa_df["FA"] != "") & (fa_df["Valore"] > 0)]
+fa_df = fa_df.dropna(subset=["Acido grasso", "Valore"])
+fa_df["Acido grasso"] = fa_df["Acido grasso"].astype(str).str.strip()
+fa_df = fa_df[(fa_df["Acido grasso"] != "") & (fa_df["Valore"] > 0)]
 
 if len(fa_df) < 2:
     st.stop()
 
-fa_list = fa_df["FA"].tolist()
+fa_list = fa_df["Acido grasso"].tolist()
 tot_fa = fa_df["Valore"].sum()
-T = {row["FA"]: row["Valore"] / tot_fa for _, row in fa_df.iterrows()}
+T = {row["Acido grasso"]: row["Valore"] / tot_fa for _, row in fa_df.iterrows()}
 
 with col2:
     st.subheader("TAG noti")
     default_tags = pd.DataFrame({
-        "A (1,3)": ["P", "S", "P"],
-        "B (2)":   ["O", "O", "O"],
-        "C (1,3)": ["P", "S", "S"],
-        "%":       [2.4, 41.2, 10.5]
+        "sn-1/3": ["P", "S", "P"],
+        "sn-2":   ["O", "O", "O"],
+        "sn-3/1": ["P", "S", "S"],
+        "%":      [2.4, 41.2, 10.5]
     })
     tag_df = st.data_editor(
         default_tags,
         num_rows="dynamic",
         use_container_width=True,
         column_config={
-            "A (1,3)": st.column_config.SelectboxColumn(options=fa_list, required=True),
-            "B (2)":   st.column_config.SelectboxColumn(options=fa_list, required=True),
-            "C (1,3)": st.column_config.SelectboxColumn(options=fa_list, required=True),
-            "%":       st.column_config.NumberColumn(min_value=0.0, max_value=100.0, format="%.2f", required=True),
+            "sn-1/3": st.column_config.SelectboxColumn(options=fa_list, required=True),
+            "sn-2":   st.column_config.SelectboxColumn(options=fa_list, required=True),
+            "sn-3/1": st.column_config.SelectboxColumn(options=fa_list, required=True),
+            "%":      st.column_config.NumberColumn(min_value=0.0, max_value=100.0, format="%.2f", required=True),
         },
         key="tag_editor"
     )
 
-tag_df = tag_df.dropna(subset=["A (1,3)", "B (2)", "C (1,3)", "%"])
+tag_df = tag_df.dropna(subset=["sn-1/3", "sn-2", "sn-3/1", "%"])
 known_tags = {}
 for _, row in tag_df.iterrows():
-    a, b, c = row["A (1,3)"], row["B (2)"], row["C (1,3)"]
+    a, b, c = row["sn-1/3"], row["sn-2"], row["sn-3/1"]
     if a in T and b in T and c in T:
         a_c, c_c = sorted([a, c])
         known_tags[(a_c, b, c_c)] = float(row["%"])
@@ -150,7 +150,7 @@ if not known_tags:
     st.stop()
 
 # ==============================================================================
-# FA NON OSSERVATI
+# ACIDI GRASSI SENZA TAG NOTI
 # ==============================================================================
 fa_osservati = set(fa for tag in known_tags.keys() for fa in tag)
 active_fas = [fa for fa in fa_list if fa in fa_osservati]
@@ -160,9 +160,9 @@ coupled_map = {}
 frozen_fas = []
 
 if unobserved_fas:
-    st.subheader("FA non osservati")
+    st.subheader("Acidi grassi senza TAG noti")
     cols_unobs = st.columns(min(len(unobserved_fas), 4))
-    opt_map = {"Fisso (T)": None, **{f"α = α({fa})": fa for fa in active_fas}}
+    opt_map = {"Fisso (distribuzione casuale)": None, **{f"Stessa preferenza di {fa}": fa for fa in active_fas}}
     opt_labels = list(opt_map.keys())
 
     for idx, fa in enumerate(unobserved_fas):
@@ -180,7 +180,7 @@ if unobserved_fas:
 st.divider()
 if st.button("Calcola", type="primary"):
     if len(active_fas) < 2:
-        st.error("Servono almeno 2 FA distinti nei TAG noti.")
+        st.error("Servono almeno 2 acidi grassi distinti nei TAG noti.")
         st.stop()
 
     p2_opt, p13_opt, res, conv = solve_model(
@@ -192,6 +192,17 @@ if st.button("Calcola", type="primary"):
         st.error("Nessuna convergenza.")
         st.stop()
 
+    fit_rows = []
+    for tag, exp in known_tags.items():
+        pred = predict_tag(tag, p2_opt, p13_opt)
+        fit_rows.append({
+            "TAG": "-".join(tag),
+            "Reale (%)": round(exp, 2),
+            "Predetto (%)": round(pred, 2),
+            "Δ (%)": round(pred - exp, 2)
+        })
+    max_abs_err = max(abs(r["Δ (%)"]) for r in fit_rows)
+
     p_pop = known_tags.get(("P", "O", "P"))
     p_sos = known_tags.get(("S", "O", "S"))
     p_pos = known_tags.get(("P", "O", "S"))
@@ -199,25 +210,28 @@ if st.button("Calcola", type="primary"):
 
     cols_m = st.columns(4 if R_index is not None else 3)
     cols_m[0].metric(f"Loss ({loss_type})", f"{res.fun:.4f}")
-    cols_m[1].metric("Convergenze", f"{conv}/{n_starts}")
-    cols_m[2].metric("Iterazioni", f"{res.nit}")
+    cols_m[1].metric("Scarto max fit", f"{max_abs_err:.2f}%")
+    cols_m[2].metric("Convergenze", f"{conv}/{n_starts}")
     if R_index is not None:
         cols_m[3].metric("R (POS / 2√POP·SOS)", f"{R_index:.2f}")
-        if R_index < 0.65:
-            st.warning(f"R = {R_index:.2f} (< 0.65): possibile blend fisico.")
+
+    # Warning solo se lo scarto sul fit esplode o se R è basso con entrambi i picchi >= 5%
+    is_blend_R = (R_index is not None) and (R_index < 0.65) and (min(p_pop, p_sos) >= 5.0)
+    if max_abs_err > 5.0 or is_blend_R:
+        st.warning(f"Scarto elevato sul fit (max {max_abs_err:.2f}%): possibile blend fisico o deviazione dal modello 1,3-random-2-random.")
 
     st.subheader("Profilo posizionale")
     prof_rows = []
     for fa in fa_list:
         alpha = (p2_opt[fa] / (3.0 * T[fa])) * 100.0
-        stato = "Opt" if fa in active_fas else (f"α({coupled_map[fa]})" if fa in coupled_map else "Fisso")
+        stato = "Ottimizzato" if fa in active_fas else (f"Come {coupled_map[fa]}" if fa in coupled_map else "Fisso")
         prof_rows.append({
-            "FA": fa,
-            "T (%)": round(T[fa] * 100, 2),
+            "Acido grasso": fa,
+            "Totale (%)": round(T[fa] * 100, 2),
             "p2 (%)": round(p2_opt[fa] * 100, 2),
             "p13 (%)": round(p13_opt[fa] * 100, 2),
-            "α sn-2 (%)": round(alpha, 1),
-            "α sn-1,3 (%)": round(100.0 - alpha, 1),
+            "In sn-2 (%)": round(alpha, 1),
+            "In sn-1,3 (%)": round(100.0 - alpha, 1),
             "Stato": stato
         })
     st.dataframe(pd.DataFrame(prof_rows), use_container_width=True, hide_index=True)
@@ -225,22 +239,13 @@ if st.button("Calcola", type="primary"):
     c_fit, c_pred = st.columns([1, 1.2])
 
     with c_fit:
-        st.subheader("Fit")
-        fit_rows = []
-        for tag, exp in known_tags.items():
-            pred = predict_tag(tag, p2_opt, p13_opt)
-            fit_rows.append({
-                "TAG": "-".join(tag),
-                "Reale (%)": round(exp, 2),
-                "Pred (%)": round(pred, 2),
-                "Δ (%)": round(pred - exp, 2)
-            })
+        st.subheader("Fit sui TAG noti")
         st.dataframe(pd.DataFrame(fit_rows), use_container_width=True, hide_index=True)
 
     with c_pred:
         st.subheader(f"TAG predetti (≥ {min_display}%)")
         df_all = generate_all_tags(T, p2_opt, p13_opt)
-        df_show = df_all[df_all["Pred (%)"] >= min_display].copy()
-        df_show["Pred (%)"] = df_show["Pred (%)"].round(2)
+        df_show = df_all[df_all["Predetto (%)"] >= min_display].copy()
+        df_show["Predetto (%)"] = df_show["Predetto (%)"].round(2)
         st.dataframe(df_show, use_container_width=True, hide_index=True)
-        st.download_button("CSV", df_all.to_csv(index=False).encode("utf-8"), "tag_predetti.csv", "text/csv")
+        st.download_button("Scarica CSV", df_all.to_csv(index=False).encode("utf-8"), "tag_predetti.csv", "text/csv")
